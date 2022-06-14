@@ -6,9 +6,9 @@ open Microsoft.AspNetCore.Http
 open Giraffe
 open Giraffe.ViewEngine
 
-type PingModel = {
-    Response: string
-}
+open Models
+open Todos
+
 
 let indexView =
     html [] [
@@ -30,16 +30,27 @@ let sayHelloNameHandler (name:string) =
             return! json { Response = msg } next ctx
         }
 
+let apiTodoRoutes : HttpHandler =
+    subRoute "/todo"
+        (choose [
+            GET >=> choose [
+                routef "/%O" Handlers.viewTaskHandler
+                route "" >=> Handlers.viewTasksHandler
+            ]
+            POST >=> route "" >=> Handlers.updateTaskHandler
+            PUT >=> route "" >=> Handlers.createTaskHandler
+            DELETE >=> routef "/%O" Handlers.deleteTaskHandler
+        ])
+
 let webApp =
     choose [
-        GET >=> choose [
-            route "/" >=> htmlView indexView
-            subRoute "/api"
-                (choose [
-                        route "" >=> json { Response = "Hello world!!" }
-                        routef "/%s" sayHelloNameHandler
-                ])
-        ]
+        GET >=> route "/" >=> htmlView indexView
+        subRoute "/api"
+            (choose [
+                apiTodoRoutes
+                GET >=> route "" >=> json { Response = "ToDo List API" }
+                GET >=> routef "/%s" Handlers.sayHelloNameHandler
+            ])
         setStatusCode 404 >=> text "Not Found"
     ]
     
@@ -47,7 +58,8 @@ let configureApp (app : IApplicationBuilder) =
     app.UseGiraffe webApp
 
 let configureServices (services : IServiceCollection) =
-    services.AddGiraffe() |> ignore
+    services.AddGiraffe()
+            .AddSingleton<TodoStore>(TodoStore()) |> ignore
 
 [<EntryPoint>]
 let main _ =
