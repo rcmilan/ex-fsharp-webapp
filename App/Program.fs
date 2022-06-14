@@ -18,11 +18,11 @@ let configureServices (services : IServiceCollection) =
 [<EntryPoint>]
 let main _ =
     let contentRoot = Directory.GetCurrentDirectory()
-    let webRoot = Path.Combine(contentRoot, "WebRoot")
+    let webRoot = Path.Combine(contentRoot, "wwwroot")
     Host.CreateDefaultBuilder()
         .ConfigureWebHostDefaults(fun webHost ->
             webHost
-                .UseWebRoot(webRoot)
+                .UseWebRoot("public")
                 .Configure(configureApp)
                 .ConfigureServices(configureServices)
                 |> ignore)
